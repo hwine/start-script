@@ -17,6 +17,7 @@ kinds:
 
 import os
 import re
+import subprocess
 import sys
 sys.dont_write_bytecode = True
 from ruamel import yaml
@@ -43,8 +44,7 @@ def interpolate(kinds, templates):
 class ConfigFileNotFoundError(FileNotFoundError):
     pass
 
-def main(args):
-    exitcode = 0
+def parse_args(args):
     parser = ArgumentParser(
         description=__doc__,
         formatter_class=RawDescriptionHelpFormatter,
@@ -54,6 +54,10 @@ def main(args):
         metavar='FILEPATH',
         default='~/.config/{NAME}/{NAME}.yml'.format(**globals()),
         help='default="%(default)s"; config filepath')
+    parser.add_argument(
+        '-e', '--edit',
+        action='store_true',
+        help='edit config file')
     ns, rem = parser.parse_known_args()
     try:
         config = yaml.safe_load(open(os.path.expanduser(ns.config)))
@@ -61,6 +65,9 @@ def main(args):
         raise ConfigFileNotFoundError
 
     kinds = interpolate(config['kinds'], config['templates'])
+    if ns.edit:
+        # if we're editing, nothing else matters
+        return ns
     parser = ArgumentParser(
         parents=[parser])
     #parser.set_defaults(**config)
@@ -85,6 +92,16 @@ def main(args):
         help='default="tmp"; optionally name the script')
 
     ns = parser.parse_args(args)
+    return ns
+
+def main(args):
+    exitcode = 0
+    ns = parse_args(args)
+    if ns.edit:
+        editor_app = os.getenv('VISUAL', os.getenv('EDITOR', 'vi'))
+        result = subprocess.run([editor_app, ns.config])
+        raise SystemExit(result.returncode)
+
     kind = kinds[ns.kind]
     filename = ns.name
     if filename == None:
