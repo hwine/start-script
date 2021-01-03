@@ -55,9 +55,13 @@ def parse_args(args):
         default='~/.config/{NAME}/{NAME}.yml'.format(**globals()),
         help='default="%(default)s"; config filepath')
     parser.add_argument(
-        '-e', '--edit',
+        '-C', '--edit-config',
         action='store_true',
         help='edit config file')
+    parser.add_argument(
+        '-e', '--edit',
+        action='store_true',
+        help='edit script file')
     ns, rem = parser.parse_known_args()
     try:
         config = yaml.safe_load(open(os.path.expanduser(ns.config)))
@@ -65,9 +69,9 @@ def parse_args(args):
         raise ConfigFileNotFoundError
 
     kinds = interpolate(config['kinds'], config['templates'])
-    if ns.edit:
+    if ns.edit_config:
         # if we're editing, nothing else matters
-        return ns
+        return ns, kinds
     parser = ArgumentParser(
         parents=[parser])
     #parser.set_defaults(**config)
@@ -91,16 +95,27 @@ def parse_args(args):
         nargs='?',
         help='default="tmp"; optionally name the script')
 
+    # don't interpret --edit as short for --edit-config
     ns = parser.parse_args(args)
-    return ns
+    # I know there's a builtin way, but...
+    if ns.edit and (ns.nerf or ns.rm):
+        parser.error("--edit option incompatible with other options")
+    return ns, kinds
+
+def edit_file(path):
+    editor_app = os.getenv('VISUAL', os.getenv('EDITOR', 'vi'))
+    result = subprocess.run([editor_app, path])
+    if result.returncode != 0:
+        raise SystemExit(result.returncode)
 
 def main(args):
     exitcode = 0
-    ns = parse_args(args)
-    if ns.edit:
-        editor_app = os.getenv('VISUAL', os.getenv('EDITOR', 'vi'))
-        result = subprocess.run([editor_app, ns.config])
-        raise SystemExit(result.returncode)
+    ns, kinds = parse_args(args)
+    if ns.edit_config:
+        edit_file(ns.config)
+        import pdb; pdb.set_trace()
+        if not hasattr(ns, 'kind'):  # nothing more to do
+            return
 
     kind = kinds[ns.kind]
     filename = ns.name
@@ -116,6 +131,8 @@ def main(args):
             f.write(kind['content'])
         chmod = ns.chmod if ns.chmod else kind['chmod']
         os.chmod(filename, int(str(chmod), 8))
+        if ns.edit:
+            edit_file(filename)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

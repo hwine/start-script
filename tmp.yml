@@ -31,10 +31,11 @@ kinds:
             {mpl2-header}
 
     py:
-        chmod: 775
+        chmod: 755
         suffix: py
         content: |
             {py3-header}
+            {mpl2-header}
             {py-common}
             def main(args):
                 print(args)
@@ -47,7 +48,7 @@ kinds:
         content: |
             {sh-header}
             {shell-debug}
-            {shell-common}
+            {shell-boilerplate}
 
     zsh:
         chmod: 775
@@ -71,11 +72,11 @@ kinds:
 
     bash:
         chmod: 775
-        suffix: sh
+        suffix: bash
         content: |
             {bash-header}
             {shell-debug}
-            {shell-common}
+            {shell-boilerplate}
 
     yaml:
         chmod: 664
@@ -189,6 +190,36 @@ kinds:
 
             {py-footer}
 
+    decision-record:
+        chmod: 664
+        suffix: md
+        content: |
+            # <title>
+            PUBLIC
+            Status: proposed  
+            Date: <date>
+            ## Context and Problem Statement
+
+            ## Decision Drivers
+
+            ## Decision Outcome
+            Chosen option: 
+            ### Positive Consequences
+
+            ### Negative Consequences
+
+            # Details
+            ## Considered Options
+
+            ## Pros and Cons of the Options
+            ### xxx
+            Good, because 
+
+            Bad, because 
+
+            ## Links 
+
+
 templates:
     mpl2-header: |
         # This Source Code Form is subject to the terms of the Mozilla Public
@@ -210,7 +241,7 @@ templates:
         #!/bin/zsh
 
     bash-header: |
-        #!/bin/bash
+        #!/usr/bin/env bash
 
     shell-debug: |
         if [ -n "$DEBUG" ]; then
@@ -222,6 +253,26 @@ templates:
         [person]
         name: Ripley
         age: 43
+
+    shell-boilerplate: |
+        # boilerplate
+        warn() { for m; do echo "$m" ; done 1>&2 ; }
+        die() { warn "$@" ; exit 2 ; }
+        usage() { warn "$@" "${USAGE:-}"; test $# .eq 0 ; exit $? ; }
+
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+            -h|--help) usage ;;
+            -*) usage "Unknown option '$1'" ;;
+            *) break
+            esac
+            shift
+        done
+
+        MIN_ARGS=0
+        MAX_ARGS=0
+        [[ $# .lt $MIN_ARGS -o $# .lt $MAX_ARGS ]] && usage "Wrong number of args $#"
+
     shell-common: |
         REAL_FILE="$0"
         REAL_NAME="$(basename "$REAL_FILE")"
