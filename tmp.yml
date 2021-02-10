@@ -258,7 +258,7 @@ templates:
         # boilerplate
         warn() { for m; do echo "$m" ; done 1>&2 ; }
         die() { warn "$@" ; exit 2 ; }
-        usage() { warn "$@" "${USAGE:-}"; test $# .eq 0 ; exit $? ; }
+        usage() { warn "$@" "${USAGE:-}"; test $# -eq 0 ; exit $? ; }
 
         while [[ $# -gt 0 ]]; do
             case "$1" in
@@ -271,7 +271,7 @@ templates:
 
         MIN_ARGS=0
         MAX_ARGS=0
-        [[ $# .lt $MIN_ARGS -o $# .lt $MAX_ARGS ]] && usage "Wrong number of args $#"
+        [[ $# -lt $MIN_ARGS || $# -lt $MAX_ARGS ]] && usage "Wrong number of args $#"
 
     shell-common: |
         REAL_FILE="$0"
